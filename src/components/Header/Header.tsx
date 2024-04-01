@@ -1,3 +1,8 @@
+import "./Header.css";
 export default function Header() {
-  return <h1>Project Management</h1>;
+  return (
+    <div className="Header">
+      <h1>Project Management</h1>
+    </div>
+  );
 }

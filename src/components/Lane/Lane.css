@@ -1,0 +1,10 @@
+.Lane {
+  background-color: lightblue;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.Lane h2 {
+  text-align: center;
+  border-bottom: 1px solid gray;
+}
