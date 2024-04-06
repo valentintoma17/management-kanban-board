@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Lane from "../Lane/Lane";
 import "./Board.css";
 
@@ -9,27 +9,52 @@ const lanes = [
   { id: 4, title: "Done" },
 ];
 
-function onDragStart(event: React.DragEvent, id: number) {
-  console.log("onDragStart", id);
-  event.dataTransfer.setData("text/plain", id.toString());
-}
-
-function handleDragOver(event: React.DragEvent) {
-  event.preventDefault();
-}
-
 export default function Board() {
-  const [tasks, setTask] = useState(loadedTask);
+  const [tasks, setTasks] = useState(loadedTask);
+  const [dragging, setDragging] = useState(false);
 
-  function onDrop(event: React.DragEvent, laneId: number) {
-    const id = event.dataTransfer.getData("text/plain");
-    event.preventDefault();
+  const dragItem = useRef<{ laneId: number; id: number } | null>(null);
+  const dragNode = useRef<HTMLDivElement | null>(null);
 
-    const task = tasks.find((t) => t.id === Number(id));
-    if (task) {
-      const newTask = tasks.filter((t) => t.id !== Number(id));
-      setTask(newTask.concat({ ...task, laneId }));
+  function onDragStart(
+    event: React.DragEvent,
+    item: { laneId: number; id: number }
+  ) {
+    dragItem.current = item;
+    dragNode.current = event.target as HTMLDivElement;
+    dragNode.current.addEventListener("dragend", handleDragEnd);
+    setTimeout(() => {
+      setDragging(true), 0; // Creates the blank space for the postion in the lane
+    });
+  }
+
+  function handleDragEnter(
+    event: React.DragEvent,
+    paramsTarget: { laneId: number; id: number }
+  ) {
+    event.preventDefault(); // Prevent default behavior (e.g., opening a link)
+    event.stopPropagation(); // Stop the event from bubbling up the DOM tree
+    if (dragItem?.current?.id !== paramsTarget.id) {
+      const index = tasks.findIndex((e) => e.id === dragItem?.current?.id);
+      const indexTarget = tasks.findIndex((e) => e.id === paramsTarget.id);
+      setTasks((oldTasks) => {
+        const newTasks = JSON.parse(JSON.stringify(oldTasks));
+        if (dragItem.current) {
+          const x = newTasks.splice(index, 1)[0]; // Remove the dragged item
+          x.laneId = paramsTarget.laneId; // Update the laneId of the dragged item
+          newTasks.splice(indexTarget, 0, x); // Insert the dragged item to the new position
+          dragItem.current = { laneId: paramsTarget.laneId, id: x.id }; // Update dragged item
+        }
+        return newTasks;
+      });
     }
+  }
+
+  function handleDragEnd() {
+    dragItem.current = null;
+    dragNode.current?.removeEventListener("dragend", handleDragEnd);
+    dragNode.current = null;
+    setDragging(false);
   }
 
   return (
@@ -41,8 +66,9 @@ export default function Board() {
           title={lane.title}
           tasks={tasks.filter((t) => t.laneId === lane.id)}
           onDragStart={onDragStart}
-          onDragOver={handleDragOver}
-          onDrop={onDrop}
+          draggingStatus={dragging}
+          ref={dragItem}
+          onDragEnter={handleDragEnter}
         />
       ))}
     </div>

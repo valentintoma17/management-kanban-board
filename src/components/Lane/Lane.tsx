@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import Task, { TaskProps } from "../Task/Task";
 import "./Lane.css";
 
@@ -5,24 +6,25 @@ type LaneProps = {
   id: number;
   title: string;
   tasks: TaskProps[];
-  onDragStart: (event: React.DragEvent, id: number) => void;
-  onDragOver?: (event: React.DragEvent) => void;
-  onDrop?: (event: React.DragEvent, id: number) => void;
+  onDragStart?: (
+    event: React.DragEvent,
+    params: { laneId: number; id: number }
+  ) => void;
+  onDragEnter?: (
+    event: React.DragEvent,
+    params: { laneId: number; id: number }
+  ) => void;
+  draggingStatus?: boolean;
 };
 
-export default function Lane({
-  id,
-  title,
-  tasks,
-  onDragStart,
-  onDragOver,
-  onDrop,
-}: LaneProps) {
+const Lane = forwardRef(function (
+  { id, title, tasks, onDragStart, onDragEnter, draggingStatus }: LaneProps,
+  dragItem
+) {
   return (
     <div
       className="Lane"
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop && onDrop(e, id)}
+      onDragEnter={(e) => onDragEnter && onDragEnter(e, { laneId: id, id: -1 })} // -1 is a placeholder for the lane
     >
       <h2>{title}</h2>
       {tasks.map((t) => (
@@ -31,9 +33,15 @@ export default function Lane({
           id={t.id}
           title={t.title}
           body={t.body}
+          laneId={t.laneId}
           onDragStart={onDragStart}
+          ref={dragItem as React.RefObject<{ laneId: number; id: number }>}
+          onDragEnter={onDragEnter}
+          draggingStatus={draggingStatus}
         />
       ))}
     </div>
   );
-}
+});
+
+export default Lane;
